@@ -29,8 +29,9 @@ struct ddata_wrapper
 
 class fault_det 
 {
-	public:
-
+	public: 
+    /*Esta especificación de acceso indica que los miembros que siguen son accesibles desde fuera de la clase.
+    Los miembros públicos pueden ser accedidos por cualquier parte del programa.*/
     
 
     fault_det(){}
