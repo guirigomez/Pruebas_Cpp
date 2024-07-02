@@ -51,11 +51,24 @@ class fault_det
 		
 	
     void new_gopdu_data(const char* goID, const char* dateTime, const bool* value, const uint32_t* q, int stNum, int sqNum)
+    /*La función new_gopdu_data recibe varios parámetros, incluyendo identificadores, fecha y hora, valores booleanos,
+     y números de estado y secuencia. La función realiza las siguientes acciones:
+     - Bloquea un mutex para asegurar el acceso seguro a los recursos compartidos.
+     - Almacena los estados actuales en variables temporales.
+     - Verifica si se ha perdido algún estado y lo imprime si es necesario.
+     - Imprime los valores recibidos.
+     - Actualiza los estados con los nuevos valores.
+     - Reinicia los contadores si los estados han cambiado de false a true.
+     - Actualiza el número de estado anterior.
+     - El codigo comenado verifica las entradas de la unidad de medida.*/
     {
 
-       const std::lock_guard<std::mutex> lock(deque_mutex);
-	
-      bool CB_POS_SV_status_ant  = CB_POS_SV_status;
+        const std::lock_guard<std::mutex> lock(deque_mutex);
+        /*Esta línea crea un objeto lock_guard que bloquea el mutex deque_mutex para asegurar que
+        el acceso a los recursos compartidos sea seguro en un entorno multihilo. 
+        El mutex se desbloqueará automáticamente cuando el objeto lock_guard salga del alcance.*/
+
+        bool CB_POS_SV_status_ant  = CB_POS_SV_status;
 	    bool CB_NEG_SV_status_ant  = CB_NEG_SV_status;
 	    bool CB_POS_PV_status_ant  = CB_POS_PV_status;
 	    bool CB_NEG_PV_status_ant  = CB_NEG_PV_status;
@@ -64,15 +77,15 @@ class fault_det
 
        if (stNum != stNum_ant+1 && sqNum ==0  && stNum_ant >=0)
        {
-                std::cout<<"lost st " << stNum_ant+1 << " received "<<stNum << "  (sq)" << sqNum<<std::endl;
+            std::cout<<"lost st " << stNum_ant+1 << " received "<<stNum << "  (sq)" << sqNum<<std::endl;
+        /*Este bloque de código verifica si se ha perdido algún estado. Si el número de estado actual (stNum) 
+       no es igual al número de estado anterior más uno (stNum_ant + 1), y el número de secuencia (sqNum) es 0, 
+       y el número de estado anterior (stNum_ant) es mayor o igual a 0, se imprime un mensaje indicando la pérdida de estado.*/
        }
-       
-
-
 	
         std::cout<<"recgoose " << stNum<< "  " <<
         value[0] << " "<<
-     		value[1] << " "<<
+     	value[1] << " "<<
         value[2] << " "<<
         value[3] << " "<<
         value[4] << " "<<
@@ -100,9 +113,8 @@ class fault_det
         if(CB_NEG_Bat_status && !CB_NEG_Bat_status_ant )
             cont_inicial_Bat_NEG = 0;
 
-
-
-
+        /*Estos bloques de código reinician los contadores correspondientes
+        si el estado ha cambiado de false a true.*/
 
     	stNum_ant =  stNum;
         //Falta=value[6];
@@ -120,7 +132,7 @@ class fault_det
 
     void new_asdu_data(const char* svID, const float* value, const uint32_t* q, int smpCnt)
 	{
-        
+         
 
         if (smpCnt != smpCnt_ant+1 && smpCnt!=0 && smpCnt_ant >=0 )
         {
@@ -128,8 +140,14 @@ class fault_det
         }   
         smpCnt_ant= smpCnt;
 
+        /*Se verifica si el contador de muestras actual (smpCnt) no es secuencial con respecto
+        al contador de muestras anterior (smpCnt_ant), no es cero y el contador de muestras anterior es no negativo.
+        Si se cumple la condición, se imprime un mensaje indicando que se perdió una muestra.
+        Luego, se actualiza el contador de muestras anterior al valor del contador de muestras actual.*/
+
         Medidas_MU Medidas_MU_SV;
 
+        
         for (int i=0;i<4;i++)
         {
             Medidas_MU_SV.medidas_DC[i]=0.001*value[i];
@@ -147,11 +165,15 @@ class fault_det
                 } 
             }
         }
+
+        /*Se recorre un bucle para los primeros 4 elementos del array value.
+        Cada valor se escala por 0.001 y se almacena en el array medidas_DC de la estructura Medidas_MU_SV.
+        Se verifica si el valor escalado excede el límite de saturación (TI_satur). Si es así, se limita el valor al límite de saturación.
+        Si el valor es negativo y su valor absoluto excede el límite de saturación, se limita el valor negativo al límite de saturación negativo.*/
     
         for (int i=4;i<8;i++)
         {
             Medidas_MU_SV.medidas_DC[i]=0.00001*value[i];
-
         }
         
         /*if (svID[3]=='2')
@@ -159,8 +181,10 @@ class fault_det
         else
           printf (" svID I_NEG_SV I_NEG_PV I_NEG_Bat %d %f %f %f\n",svID, Medidas_MU_SV.medidas_DC[0],Medidas_MU_SV.medidas_DC[1],Medidas_MU_SV.medidas_DC[2]);        
         */
+       /*Este bloque de código está comentado y es utilizado para imprimir los valores basados en el svID.*/
 
         Medidas_MU_SV.SampleCount=smpCnt;
+        /*Se establece el contador de muestras en la estructura Medidas_MU_SV con el valor del contador de muestras actual (smpCnt).*/
 
 
         insert_data(svID,Medidas_MU_SV);  
@@ -168,14 +192,15 @@ class fault_det
    
          // Reseteo entrada 
 
-        
-
 	}
 	
     
 	private:
 
     bool static liberar()
+    /*El método liberar verifica el estado de varios componentes llamando a la función Cierre_Intor con diferentes parámetros. 
+    Luego, actualiza el estado de Enabled basado en los resultados de estas llamadas. Si el estado de Enabled cambia, 
+    se imprime un mensaje indicando el nuevo estado. Finalmente, el método devuelve el valor de Enabled.*/
     {
         bool liberar_SV_POS=Cierre_Intor(CB_POS_SV_status, cont_inicial_SV_POS);
         bool liberar_PV_POS=Cierre_Intor(CB_POS_PV_status, cont_inicial_PV_POS);
@@ -190,6 +215,7 @@ class fault_det
  
         return Enabled;
     }
+
 
     void static espera_breaker()
     {
@@ -234,13 +260,21 @@ class fault_det
  
 
     void static localiza_falta()
+
+    /*localiza_falta(), es responsable de detectar y localizar las fallas en base a las mediciones de los MUs. 
+    La función compara las diferencias en las mediciones de corriente entre los lados positivo y negativo, y determina el tipo de falla*/
     {
 
     	//const float umbral = 0.1f;
 	    const float umbral = 26.0f;
 
+        /*La constante umbral se utiliza para establecer un umbral de diferencia en las mediciones de corriente, 
+        mientras que num_samples_diff representa el número de muestras utilizadas para comparar las diferencias.*/
+
         const float *Int_Promedio_pos = inform_MU_POS_pre.back().medidas_DC_prom;
         const float *Int_Promedio_neg = inform_MU_NEG_pre.back().medidas_DC_prom;
+
+        /*Estas estructuras son contenedores para almacenar información relacionada con las mediciones de los MUs.*/
 
 	    const int num_samples_diff=6;
 
@@ -266,11 +300,11 @@ class fault_det
         std::cout<<"neg: "<<abs(Int_Promedio_neg[0]-Int_Promedio_neg_ant[0]) << " "<< 
 	    abs(Int_Promedio_neg[1]-Int_Promedio_neg_ant[1]) << " "<<
 	    abs(Int_Promedio_neg[2]-Int_Promedio_neg_ant[2]) << std::endl;*/
-/*
+        /*
        std::cout<<"pos1: "<<(Int_Promedio_pos[0]) << " " <<(Int_Promedio_neg[0]) << " "<<
        (Int_Promedio_pos[1]) << " " <<(Int_Promedio_neg[1]) << " "<<
        (Int_Promedio_pos[2]) << " " <<(Int_Promedio_neg[2]) << std::endl;
-*/
+        */
 
 
 
@@ -322,6 +356,9 @@ class fault_det
             //printf("nopos\n");
 		    return;
         }
+
+        /*Se comparan las diferencias en las mediciones de corriente para determinar 
+        si hay una diferencia significativa en cada circuito (SV, PV, Bat).*/
         
 
         bool SV_POS = (Int_Promedio_pos[0]-Int_Promedio_pos_ant[0])>0;
@@ -347,6 +384,8 @@ class fault_det
         bool PV_NEG = (Int_Promedio_neg[1]-Int_Promedio_neg_ant[1])>0;
         bool Bat_NEG= (Int_Promedio_neg[2]-Int_Promedio_neg_ant[2])>0;
 
+        /*Se establecen variables booleanas para indicar si hay una diferencia significativa en cada circuito.*/
+
         Status=FAULT_DETECTED;
 
         std::cout<<"pos: "<<(Int_Promedio_pos[0]-Int_Promedio_pos_ant[0]) << " "<<
@@ -355,6 +394,7 @@ class fault_det
         std::cout<<"neg: "<<(Int_Promedio_neg[0]-Int_Promedio_neg_ant[0]) << " "<< 
 	    (Int_Promedio_neg[1]-Int_Promedio_neg_ant[1]) << " "<<
 	    (Int_Promedio_neg[2]-Int_Promedio_neg_ant[2]) << std::endl;
+
         Falta_Diff = 0;
 	    if(SV_POS && PV_POS && Bat_POS && !SV_NEG && !PV_NEG && !Bat_NEG)
 	        Falta_Diff = 3;
@@ -415,15 +455,19 @@ class fault_det
 	    comtrade = new Comtrade("Tigon",50, 12800, achannels, dchannels);
 	    samples_post_trigger=0;
 	    for(int i=0;i<inform_MU_POS_pre.size();i++)
+        /*Se recorren los elementos de las estructuras inform_MU_POS_pre, inform_MU_NEG_pre, 
+        y ddata_pre para insertar los datos de la falla en el objeto comtrade.*/
 	    {
             if(i == 0)
                 comtrade->setStart(DateFromSmpCnt(inform_MU_POS_pre[i].SampleCount, 12800));
 	        if(i == inform_MU_POS_pre.size()-1)
 	        {
                 comtrade->setTrigger(DateFromSmpCnt(inform_MU_POS_pre[i].SampleCount, 12800));
+                /*Se establece la marca de tiempo de inicio y la marca de tiempo de disparo en el objeto comtrade para cada muestra.*/
 	        }
 
             insert_data_comtrade(inform_MU_POS_pre[i], inform_MU_NEG_pre[i],ddata_pre[i].ddata);
+            /*Se insertan los datos de la falla en el objeto comtrade.*/
 	    }
     }
 
@@ -469,7 +513,7 @@ class fault_det
     {
         float adata[achannels.size()];
 
-      adata[0] = pos.medidas_DC[0]; 
+        adata[0] = pos.medidas_DC[0]; 
 	    adata[1] = pos.medidas_DC[1]; 
 	    adata[2] = pos.medidas_DC[2]; 
 		        
@@ -489,6 +533,11 @@ class fault_det
         comtrade->addValue(adata,ddata);
     }
     static bool corriente_0()
+
+    /*Para cada tipo de falla, compara los valores absolutos de las mediciones promediadas con el valor umbral. 
+    Si cualquiera de los valores absolutos supera el umbral, la función devuelve false, lo que indica que las 
+    mediciones de corriente no están cercanas a cero.*/
+
     {
     	const float umbral = 0.1*180;//1.1*6.5f;
 	    const float *Int_Promedio_pos = inform_MU_POS_pre.back().medidas_DC_prom;
@@ -655,6 +704,10 @@ class fault_det
         }
 */
         static bool checkTimestamps(const std::deque<Medidas_MU> &positivo, const std::deque<Medidas_MU> &negativo, int &foundSampleCount,std::deque<Medidas_MU> &inform_MU_POS,std::deque<Medidas_MU> &inform_MU_NEG)
+        
+        /*Después de verificar todos los elementos de la cola positivo, la función comprueba si se encontraron elementos coincidentes en la cola negativo.
+        Si no se encontraron elementos coincidentes en ambas colas, la función devuelve false. De lo contrario, devuelve true.*/
+        
         {
             auto it_positivo = positivo.end(); 
             auto it_negativo = negativo.end();
@@ -704,6 +757,8 @@ class fault_det
     } 
          
     static void discardOldDCValues(std::deque<Medidas_MU> &terminal,int foundSampleCount)
+
+    /*Esta función tiene como objetivo eliminar valores de corriente continua (DC) obsoletos de un deque de Medidas_MU.*/
     {
         auto it_r = find_if(terminal.begin(), terminal.end(),[&] (const Medidas_MU& s) { return foundSampleCount == s.SampleCount; });
         if (it_r!=terminal.begin())
@@ -755,6 +810,9 @@ class fault_det
             ddata_pre.push_back(ddata);
             if (ddata_pre.size()>num_samples_pre)
                 ddata_pre.pop_front();
+            
+            /*Se agrega el objeto ddata a la cola ddata_pre. Si el número de objetos en la cola supera el número de muestras previas, 
+            se elimina el objeto más antiguo.*/
                 
                 
 	//#########################################################################################################################
