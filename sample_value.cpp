@@ -35,6 +35,8 @@ class fault_det
     
 
     fault_det(){}
+    /* Aunque el constructor no realice ninguna acción específica en este momento, proporciona una base para posibles 
+    modificaciones futuras sin cambiar la interfaz pública de la clase.*/
 
 	// Setting definition
 	const float I_diff_POS_sett=27; //A
