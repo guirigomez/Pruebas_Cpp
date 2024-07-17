@@ -2,12 +2,16 @@
 using namespace std;
 
 int main() {
-    int rows, cols, num;
+    int rows, cols;
 
     cout << "Enter rows and columns for the matrix: ";
     cin >> rows >> cols;
 
-    int matrix[rows][cols];
+    // Dynamically allocate memory for the matrix
+    int** matrix = new int*[rows];
+    for (int i = 0; i < rows; ++i) {
+        matrix[i] = new int[cols];
+    }
 
     cout << "Enter matrix elements:" << endl;
     for (int i = 0; i < rows; i++) {
@@ -23,6 +27,12 @@ int main() {
         }
         cout << endl;
     }
+
+    // Deallocate memory
+    for (int i = 0; i < rows; ++i) {
+        delete[] matrix[i];
+    }
+    delete[] matrix;
 
     return 0;
 }
